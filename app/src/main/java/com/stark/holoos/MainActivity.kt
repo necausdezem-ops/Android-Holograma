@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -294,7 +295,7 @@ private fun Reactor(accent: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun QuickChip(label: String, accent: Color, onClick: () -> Unit) {
+private fun RowScope.QuickChip(label: String, accent: Color, onClick: () -> Unit) {
     Box(
         Modifier.weight(1f).border(1.dp, accent.copy(.45f), RoundedCornerShape(10.dp))
             .background(accent.copy(.09f), RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(vertical = 9.dp),
