@@ -33,7 +33,7 @@ internal sealed class ReceiverForm : Form
         BackColor = System.Drawing.Color.FromArgb(3, 10, 20);
         ForeColor = System.Drawing.Color.FromArgb(0, 243, 255);
         Font = new System.Drawing.Font("Segoe UI", 10);
-        var title = new Label { Text = "STARK  /  HOLOBRIDGE", Dock = DockStyle.Top, Height = 58, TextAlign = System.Drawing.ContentAlignment.MiddleCenter, Font = new System.Drawing.Font("Segoe UI", 18, System.Drawing.FontStyle.Light), ForeColor = ForeColor };
+        var title = new Label { Text = "STARK  /  HOLOBRIDGE", Dock = DockStyle.Top, Height = 58, TextAlign = System.Drawing.ContentAlignment.MiddleCenter, Font = new System.Drawing.Font(new System.Drawing.FontFamily("Segoe UI"), 18, System.Drawing.FontStyle.Regular), ForeColor = ForeColor };
         _pinLabel.Text = "PIN DE PAREAMENTO: " + _pin;
         _pinLabel.Dock = DockStyle.Top; _pinLabel.Height = 40; _pinLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
         _status.Text = "Iniciando receptor local na porta 47821…";
