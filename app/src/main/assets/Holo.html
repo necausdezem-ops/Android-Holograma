@@ -996,6 +996,23 @@ document.addEventListener('pointerup',e=>{
  if(d.armed&&d.y-e.clientY>65&&Math.abs(d.x-e.clientX)<100){e.preventDefault();e.stopPropagation();holoBridgeSendSelection(d.target)}
 },{capture:true});
 
+
+/* HOLOBRIDGE: gesto de transmissão de conteúdo selecionado */
+let hbGesture=null;
+function holoBridgeTransmit(el){
+ const title=(el.querySelector('h1,h2,h3,h4,.nh,.win-title,span')?.textContent||'Conteúdo HoloOS').trim().slice(0,100);
+ const payload=(el.innerText||el.textContent||'').trim().slice(0,8000);
+ if(!payload){notify({icon:'🔗',title:'HoloBridge',desc:'Não há conteúdo para transmitir.'});return;}
+ const ip=prompt('IP do PC com HoloBridge (ex.: 192.168.1.20):',localStorage.getItem('holoBridgeIp')||'');
+ if(!ip)return;
+ localStorage.setItem('holoBridgeIp',ip.trim());
+ const pin=prompt('Digite o PIN exibido no HoloBridge do PC:');
+ if(!pin)return;
+ if(window.HoloBridge&&HoloBridge.sendHologram){HoloBridge.sendHologram(ip.trim(),pin.trim(),'text',title,payload);notify({icon:'🌀',title:'HoloBridge',desc:'Enviando conteúdo ao computador…'});}
+ else notify({icon:'🌀',title:'HoloBridge',desc:'Atualize o HoloOS Android para habilitar a transmissão.'});
+}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.notif,#searchHologram,.holo-app,.win-content .chip');if(!el||e.target.closest('button,input,textarea,a'))return;hbGesture={el,y:e.clientY,x:e.clientX,armed:false};hbGesture.timer=setTimeout(()=>{if(hbGesture)hbGesture.armed=true;},400);},{capture:true});
+document.addEventListener('pointerup',e=>{const g=hbGesture;if(!g)return;clearTimeout(g.timer);hbGesture=null;if(g.armed&&g.y-e.clientY>65&&Math.abs(g.x-e.clientX)<100){e.preventDefault();e.stopPropagation();holoBridgeTransmit(g.el);}},{capture:true});
 </script>
 </body>
 </html>
