@@ -137,7 +137,7 @@ internal sealed class ReceiverForm : Form
             var response = Encoding.UTF8.GetBytes($"HTTP/1.1 {responseStatus}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(responseText)}\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n{responseText}");
             try { await stream.WriteAsync(response, token); } catch { }
             if (display.Length > 0)
-                BeginInvoke(() => { _content.AppendText(display); _status.Text = "HOLOGRAMA RECEBIDO • " + DateTime.Now.ToString("HH:mm:ss"); Show(); WindowState = FormWindowState.Normal; Activate(); });
+                BeginInvoke(new Action(() => { _content.AppendText(display); _status.Text = "HOLOGRAMA RECEBIDO • " + DateTime.Now.ToString("HH:mm:ss"); Show(); WindowState = FormWindowState.Normal; Activate(); }));
         }
     }
 
