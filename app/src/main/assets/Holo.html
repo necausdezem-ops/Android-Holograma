@@ -861,20 +861,60 @@ function openInstalledByName(name){
 }
 function runCmd(t){
   const raw=t.trim(),lower=raw.toLowerCase();
-  const wa=raw.match(/(?:manda|envia|enviar|mandar)\s+(?:uma\s+)?mensagem\s+(?:no\s+)?whats(?:app)?\s+(?:para|pro|pra)\s+(.+?)\s+(?:dizendo|falando|com\s+a\s+mensagem)\s+(.+)/i);
-  if(wa){const parts=wa[1].trim().match(/^(.*?)(?:\s+(\+?\d[\d\s()-]{7,}))?$/);const number=parts?.[2]?.replace(/\D/g,'');if(number&&window.HoloBridge){HoloBridge.sendWhatsAppMessage(number,wa[2]);say('Preparei a mensagem no WhatsApp. Confira e toque em enviar.');return}openApp('whatsapp');say('Informe o número e a mensagem no painel WhatsApp.');return}
-  const dial=raw.match(/(?:liga(?:r)?|chama(?:r)?)\s+(?:para|pro|pra)\s+([+\d][\d\s()-]{6,})/i);
-  if(dial){if(window.HoloBridge)HoloBridge.dialNumber(dial[1]);else holoOpen('tel:'+dial[1].replace(/[^+\d]/g,''));say('Abrindo o discador para você confirmar a ligação.');return}
-  const app=raw.match(/(?:abre|abrir|inicia|iniciar|executa)\s+(?:o\s+app\s+|aplicativo\s+|app\s+)?(.+)/i);
+  const wa=raw.match(/(?:manda|envia|enviar|mandar)\\s+(?:uma\\s+)?mensagem\\s+(?:no\\s+)?whats(?:app)?\\s+(?:para|pro|pra)\\s+(.+?)\\s+(?:dizendo|falando|com\\s+a\\s+mensagem)\\s+(.+)/i);
+  if(wa){
+    const name=wa[1].trim(),message=wa[2].trim();
+    if(window.HoloBridge?.findContactsByName){window.holoPendingWhatsApp={name,message};say('Vou procurar '+name+' nos seus contatos.');HoloBridge.findContactsByName(name);return}
+    say('A busca de contatos exige a versão Android do HoloOS.');return
+  }
+  const dialName=raw.match(/(?:liga(?:r)?|chama(?:r)?)\\s+(?:para|pro|pra)\\s+(.+)/i);
+  if(dialName&&!/^\\+?[\\d\\s()-]{7,}$/.test(dialName[1].trim())){
+    if(window.HoloBridge?.findContactsByName){window.holoPendingCall={name:dialName[1].trim()};say('Procurando o contato '+dialName[1].trim()+'.');HoloBridge.findContactsByName(dialName[1].trim());return}
+  }
+  const dial=raw.match(/(?:liga(?:r)?|chama(?:r)?)\\s+(?:para|pro|pra)\\s+([+\\d][\\d\\s()-]{6,})/i);
+  if(dial){if(window.HoloBridge)HoloBridge.dialNumber(dial[1]);else holoOpen('tel:'+dial[1].replace(/[^+\\d]/g,''));say('Abrindo o discador para você confirmar a ligação.');return}
+  const app=raw.match(/(?:abre|abrir|inicia|iniciar|executa)\\s+(?:o\\s+app\\s+|aplicativo\\s+|app\\s+)?(.+)/i);
   if(app){openInstalledByName(app[1].trim());say('Procurando o aplicativo '+app[1].trim()+'.');return}
-  if(/^(?:pesquisa|pesquisar|procura|procurar|busca|buscar|mostra|mostrar|pesquise|me mostra|me mostre)\s+/i.test(raw)){
-    const q=raw.replace(/^(?:pesquisa(?:r)?|procura(?:r)?|busca(?:r)?|mostra(?:r)?|pesquise|me mostra|me mostre)\s+/i,'').replace(/^(?:por|sobre)\s+/i,'').trim();
+  if(/^(?:pesquisa|pesquisar|procura|procurar|busca|buscar|mostra|mostrar|pesquise|me mostra|me mostre)\\s+/i.test(raw)){
+    const q=raw.replace(/^(?:pesquisa(?:r)?|procura(?:r)?|busca(?:r)?|mostra(?:r)?|pesquise|me mostra|me mostre)\\s+/i,'').replace(/^(?:por|sobre)\\s+/i,'').trim();
     if(q){say('Materializando a pesquisa holográfica.');materializeSearch(q);return}
   }
   for(const [re,fn] of CMDS)if(re.test(lower)){fn();return}
   say('Materializando resultados para '+raw+'.');materializeSearch(raw);
 }
-window.holoNativeVoiceResult=function(t){orbS.listen=false;if(t){stat.textContent='🗣️ "'+t+'"';runCmd(t)}else setStatus(IDLE,0)};
+window.holoContactResults=function(results,status){
+ const pending=window.holoPendingWhatsApp||window.holoPendingCall;
+ window.holoPendingWhatsApp=null;window.holoPendingCall=null;
+ if(status==='permission_denied'){say('Preciso da permissão de contatos para encontrar essa pessoa.');return}
+ if(!pending){return}
+ if(!results||!results.length){say('Não encontrei '+pending.name+' na sua lista de contatos.');showContactHologram('Contato não encontrado',pending.name,'Adicione um número ao contato e tente novamente.',false);return}
+ const unique=[];const seen=new Set();
+ results.forEach(c=>{const key=(c.name+'|'+c.number).toLowerCase();if(!seen.has(key)){seen.add(key);unique.push(c)}});
+ showContactChooser(unique.slice(0,8),pending);
+};
+function showContactChooser(contacts,pending){
+ const overlay=el('<div id="contactHolo" style="position:fixed;inset:0;z-index:21000;background:rgba(0,4,12,.82);display:flex;align-items:center;justify-content:center;padding:18px"></div>');
+ const card=el('<div style="width:min(94vw,430px);max-height:80dvh;overflow:auto;padding:20px;border:1px solid var(--p);border-radius:20px;background:linear-gradient(150deg,#071e31,#02070e);box-shadow:0 0 35px var(--glow);color:#eaffff"><div style="font-size:10px;letter-spacing:3px;color:var(--p)">STARK • CONTACT SCAN</div><h2 style="font-size:20px">SELECIONE O CONTATO</h2><div class="contact-list"></div><button class="btn cancel-contact" style="margin-top:12px;width:100%">Cancelar</button></div>');
+ contacts.forEach(c=>{
+  const b=el('<button style="display:flex;width:100%;gap:12px;align-items:center;text-align:left;padding:12px;margin:7px 0;border:1px solid rgba(var(--rgb),.4);border-radius:12px;background:rgba(var(--rgb),.06);color:#eaffff"><span style="font-size:22px">◉</span><span style="flex:1;min-width:0"><b class="contact-name"></b><small style="display:block;opacity:.7;overflow-wrap:anywhere"></small></span></button>');
+  b.querySelector('b').textContent=c.name;b.querySelector('small').textContent=c.number;
+  b.onclick=()=>{overlay.remove();if(pending.message){showWhatsAppDraft(c,pending.message)}else{if(window.HoloBridge)HoloBridge.dialNumber(c.number);showContactHologram('ABRINDO DISCADOR',c.name,c.number,false)}};
+  card.querySelector('.contact-list').appendChild(b);
+ });
+ card.querySelector('.cancel-contact').onclick=()=>overlay.remove();overlay.appendChild(card);document.body.appendChild(overlay);sfx.open();
+}
+function showWhatsAppDraft(contact,message){
+ const overlay=el('<div id="whatsDraftHolo" style="position:fixed;inset:0;z-index:21000;background:rgba(0,4,12,.82);display:flex;align-items:center;justify-content:center;padding:18px"></div>');
+ const card=el('<div style="width:min(94vw,430px);padding:22px;border:1px solid var(--p);border-radius:20px;background:radial-gradient(ellipse at top,rgba(var(--rgb),.18),transparent 65%),#020914;box-shadow:0 0 38px var(--glow);color:#eaffff"><div style="font-size:10px;letter-spacing:3px;color:var(--p)">WHATSAPP • MENSAGEM PREPARADA</div><h2 style="font-size:21px;margin:14px 0 4px">CONFIRMAR DESTINATÁRIO</h2><b class="draft-name"></b><p class="draft-number" style="opacity:.7;font-size:12px"></p><div class="draft-message" style="padding:13px;margin:14px 0;border:1px solid rgba(var(--rgb),.4);border-radius:12px;overflow-wrap:anywhere"></div><p style="font-size:11px;opacity:.75">O WhatsApp será aberto com o texto preenchido. Toque em Enviar no WhatsApp; este painel não afirma que a mensagem foi enviada.</p><button class="btn open-whatsapp" style="width:100%">ABRIR WHATSAPP</button><button class="btn cancel-draft" style="width:100%;margin-top:8px">Cancelar</button></div>');
+ card.querySelector('.draft-name').textContent=contact.name;card.querySelector('.draft-number').textContent=contact.number;card.querySelector('.draft-message').textContent=message;
+ card.querySelector('.open-whatsapp').onclick=()=>{if(window.HoloBridge){HoloBridge.sendWhatsAppMessage(contact.number,message)}else holoOpen('https://wa.me/'+contact.number.replace(/\\D/g,'')+'?text='+encodeURIComponent(message));overlay.remove();showContactHologram('MENSAGEM PREPARADA',contact.name,message,false)};
+ card.querySelector('.cancel-draft').onclick=()=>overlay.remove();overlay.appendChild(card);document.body.appendChild(overlay);sfx.open();
+}
+function showContactHologram(title,name,detail,confirmed){
+ const old=document.querySelector('#contactStatusHolo');if(old)old.remove();
+ const box=el('<div id="contactStatusHolo" style="position:fixed;inset:0;z-index:22000;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,4,12,.68)"><div style="width:min(88vw,380px);padding:24px;text-align:center;border:1px solid var(--p);border-radius:22px;background:radial-gradient(ellipse at top,rgba(var(--rgb),.2),transparent 70%),#020914;box-shadow:0 0 38px var(--glow);color:#eaffff"><div style="font-size:34px;color:var(--p)">⌬</div><div class="status-title" style="font-size:19px;font-weight:800;letter-spacing:2px"></div><b class="status-name"></b><p class="status-detail" style="font-size:12px;overflow-wrap:anywhere"></p><small style="opacity:.7">Este painel é temporário; não é uma captura de confirmação do WhatsApp.</small></div></div>');
+ box.querySelector('.status-title').textContent=title;box.querySelector('.status-name').textContent=name;box.querySelector('.status-detail').textContent=detail;document.body.appendChild(box);sfx.open();setTimeout(()=>box.remove(),30000);
+}window.holoNativeVoiceResult=function(t){orbS.listen=false;if(t){stat.textContent='🗣️ "'+t+'"';runCmd(t)}else setStatus(IDLE,0)};
 window.holoNativeSpeechDone=function(){orbS.speak=false;setTimeout(()=>{if(!orbS.listen&&!orbS.speak)setStatus(IDLE,0)},1200)};
 let rec=null;
 function listen(){
