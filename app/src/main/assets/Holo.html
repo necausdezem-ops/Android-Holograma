@@ -114,6 +114,16 @@ textarea.field{flex:1;min-height:150px;resize:none;text-align:left}
 .swatches{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:2px solid #fff3}
 .sw.on{border-color:#fff;box-shadow:0 0 14px currentColor}
+.color-hero{width:100%;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid var(--border);border-radius:16px;background:radial-gradient(circle at 50% 42%,rgba(255,115,55,.24),transparent 27%),radial-gradient(circle at 50% 42%,rgba(var(--rgb),.2),transparent 58%),linear-gradient(135deg,#020812,#06182a 55%,#02050b);padding:12px}
+.color-reactor{width:112px;height:112px;border-radius:50%;border:5px double var(--p);box-shadow:0 0 22px var(--glow),inset 0 0 20px var(--glow);display:grid;place-items:center;position:relative;background:repeating-conic-gradient(from 0deg,rgba(var(--rgb),.5) 0deg 4deg,transparent 4deg 18deg)}
+.color-reactor:before{content:"";position:absolute;inset:15px;border-radius:50%;border:4px solid #ff9b42;box-shadow:0 0 18px #ff7d35,inset 0 0 16px #ff7d35;background:radial-gradient(circle,#ff7b55 0,#b82936 34%,#160d1b 70%)}
+.color-reactor:after{content:"";position:absolute;inset:3px;border-radius:50%;border:1px dashed #b7faff;animation:spin 18s linear infinite}
+.color-brand{font-size:23px;letter-spacing:2px;font-weight:800;color:#e5ffff;text-shadow:0 0 12px var(--p);margin-top:8px}
+.color-brand b{background:linear-gradient(90deg,#4c8dff,#18e4a0,#ffbd45,#ff4b67);color:transparent;background-clip:text;-webkit-background-clip:text}
+.api-row{display:flex;width:100%;gap:6px}
+.api-row .field{min-width:0;flex:1}
+@media(prefers-reduced-motion:reduce){.color-reactor:after{animation:none}}
+
 .calc-disp{width:100%;text-align:right;font-size:34px;font-weight:200;color:#fff;padding:8px 12px;background:rgba(var(--rgb),.08);border:1px solid var(--p);border-radius:12px;text-shadow:0 0 10px var(--p);overflow:hidden}
 .pad4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:100%}
 
@@ -570,6 +580,30 @@ const APPS={
       for(let i=0;i<60;i++){const h=data[i]/255*120;g.globalAlpha=.4+data[i]/430;g.fillRect(i*5,130-h,3,h)}g.globalAlpha=1};
     loop();return()=>{run=false;cancelAnimationFrame(raf);clearInterval(arpT)};
   }},
+  jarvisColor:{title:'J.A.R.V.I.S. COLOR',render(c){
+    let saved='';
+    try{saved=window.HoloBridge?HoloBridge.getGeminiApiKey():(localStorage.getItem('geminiApiKey')||'')}catch(e){}
+    c.innerHTML=`<div class="color-hero"><div class="color-reactor"></div><div class="color-brand">J.A.R.V.I.S. <b>COLOR</b></div><small style="letter-spacing:2px;opacity:.8">SPECTRUM CONTROL • STARK LABS</small></div>
+    <p>Selecione a cor principal da interface holográfica.</p>
+    <div class="swatches">${THEMES.map((t,i)=>`<div class="sw ${i===S.theme?'on':''}" data-i="${i}" title="${t.n}" style="background:rgb(${t.rgb});color:rgb(${t.rgb})"></div>`).join('')}</div>
+    <div style="width:100%;text-align:left;display:flex;flex-direction:column;gap:7px">
+      <b style="color:var(--p);letter-spacing:1px">GEMINI AI • API KEY</b>
+      <p style="font-size:11px;opacity:.85;text-align:left">Adicione sua chave do Google AI Studio para configurar a integração Gemini. A chave fica salva localmente neste aparelho.</p>
+      <div class="api-row"><input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole sua API key Gemini"><button class="btn" id="showKey" style="padding:8px">👁</button></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn" id="saveKey">💾 Salvar chave</button><button class="btn" id="clearKey">🗑 Limpar</button></div>
+      <small id="keyStatus" style="opacity:.8;text-align:left">Nenhuma chave configurada</small>
+    </div>
+    <button class="btn" id="goSettings">⚙️ Mais ajustes</button>`;
+    const key=c.querySelector('#gemKey'),status=c.querySelector('#keyStatus');
+    key.value=saved;
+    const refresh=()=>status.textContent=key.value?'🔐 Chave configurada neste aparelho':'Nenhuma chave configurada';
+    refresh();
+    c.querySelector('#showKey').onclick=()=>{key.type=key.type==='password'?'text':'password'};
+    c.querySelector('#saveKey').onclick=()=>{try{if(window.HoloBridge)HoloBridge.setGeminiApiKey(key.value);else localStorage.setItem('geminiApiKey',key.value);notify({icon:'🔐',title:'Configuração salva',desc:'A chave Gemini foi salva localmente neste aparelho.'});refresh()}catch(e){status.textContent='Não foi possível salvar a chave.'}};
+    c.querySelector('#clearKey').onclick=()=>{key.value='';try{if(window.HoloBridge)HoloBridge.setGeminiApiKey('');else localStorage.removeItem('geminiApiKey')}catch(e){}refresh()};
+    c.querySelectorAll('.sw').forEach(s=>s.onclick=()=>{setTheme(+s.dataset.i);sfx.tick();c.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===s))});
+    c.querySelector('#goSettings').onclick=()=>openApp('settings');
+  }},
   settings:{title:'Ajustes do sistema',render(c){
     c.innerHTML=`<p>Frequência do cristal</p><div class="swatches">${THEMES.map((t,i)=>`<div class="sw ${i===S.theme?'on':''}" data-i="${i}" title="${t.n}" style="background:rgb(${t.rgb});color:rgb(${t.rgb})"></div>`).join('')}</div>
     <div class="kv"><span>Efeitos sonoros</span><button class="btn" id="sS">${S.sound?'LIGADO':'DESLIG.'}</button></div>
@@ -605,21 +639,49 @@ $('#winX').onclick=closeApp;$('#winClose').onclick=closeApp;
 addEventListener('keydown',e=>{if(e.key==='Escape')closeApp()});
 
 /* ============ GRADE DE APPS ============ */
-const GRID=[
- {i:'📞',l:'Telefone',app:'dialer'},{i:'💬',l:'WhatsApp',app:'whatsapp'},{i:'🌐',l:'HoloWeb',app:'web'},{i:'🧬',l:'Hardware',app:'hardware'},
- {i:'🧮',l:'Calc',app:'calc'},{i:'📝',l:'Notas',app:'notes'},{i:'🎹',l:'Laser',app:'synth'},{i:'⚙️',l:'Ajustes',app:'settings'},
- {i:'▶️',l:'YouTube',url:'https://www.youtube.com'},{i:'🛰️',l:'Satélite',url:'https://maps.google.com'},{i:'🎵',l:'Spotify',url:'https://open.spotify.com'},{i:'🌈',l:'Espectro',fn:'theme'}];
+/* ============ GRADE DINÂMICA: APPS DO CELULAR ============ */
 const grid=$('#grid');
-GRID.forEach(a=>{
-  const d=el(`<div class="holo-app pre"><div class="app-cube">${a.i}</div><span>${a.l}</span></div>`);
-  d.onclick=()=>{
-    const cube=d.querySelector('.app-cube');
-    if(a.app)openApp(a.app,cube);
-    else if(a.url){sfx.dis();burst(cube,'out',null,.8);setTimeout(()=>holoOpen(a.url),300)}
-    else cycleTheme(cube);
-  };
-  grid.appendChild(d);
-});
+const iconForApp=(label)=>{
+ const n=(label||'').toLowerCase();
+ if(/whats/.test(n))return '💬';if(/chrome|browser|navegador|firefox|opera/.test(n))return '🌐';
+ if(/camera|câmera/.test(n))return '📷';if(/phone|telefone|dialer/.test(n))return '📞';
+ if(/message|mensagem|sms/.test(n))return '✉️';if(/photo|gallery|galeria/.test(n))return '🖼️';
+ if(/music|spotify|youtube music/.test(n))return '🎵';if(/youtube/.test(n))return '▶️';
+ if(/map|maps/.test(n))return '🗺️';if(/setting|configura/.test(n))return '⚙️';
+ if(/gemini|chatgpt|ai|assistant/.test(n))return '🤖';if(/play store|store/.test(n))return '🛍️';
+ return '📱';
+};
+function addGridTile({icon,label,app,url,fn,packageName}){
+ const d=el(`<div class="holo-app"><div class="app-cube">${icon}</div><span></span></div>`);
+ d.querySelector('span').textContent=label;
+ d.title=label;
+ d.onclick=()=>{
+   const cube=d.querySelector('.app-cube');
+   if(packageName&&window.HoloBridge){sfx.open();HoloBridge.launchApp(packageName);return}
+   if(app)openApp(app,cube);
+   else if(url){sfx.dis();burst(cube,'out',null,.5);setTimeout(()=>holoOpen(url),180)}
+   else if(fn==='theme')cycleTheme(cube);
+ };
+ grid.appendChild(d);
+}
+function buildGrid(){
+ grid.innerHTML='';
+ addGridTile({icon:'🎨',label:'J.A.R.V.I.S. Color',app:'jarvisColor'});
+ if(window.HoloBridge){
+   try{
+     const installed=JSON.parse(HoloBridge.getInstalledApps()||'[]');
+     installed.forEach(a=>addGridTile({icon:iconForApp(a.label),label:a.label,packageName:a.packageName}));
+   }catch(e){notify({icon:'⚠️',title:'Apps indisponíveis',desc:'Não foi possível ler a lista de aplicativos instalados.'})}
+ }else{
+   [
+    {i:'📞',l:'Telefone',app:'dialer'},{i:'💬',l:'WhatsApp',app:'whatsapp'},{i:'🌐',l:'HoloWeb',app:'web'},{i:'🧬',l:'Hardware',app:'hardware'},
+    {i:'🧮',l:'Calc',app:'calc'},{i:'📝',l:'Notas',app:'notes'},{i:'🎹',l:'Laser',app:'synth'},{i:'⚙️',l:'Ajustes',app:'settings'},
+    {i:'▶️',l:'YouTube',url:'https://www.youtube.com'},{i:'🛰️',l:'Mapas',url:'https://maps.google.com'},{i:'🌈',l:'Espectro',fn:'theme'}
+   ].forEach(a=>addGridTile({icon:a.i,label:a.l,app:a.app,url:a.url,fn:a.fn}));
+ }
+ ['whatsapp','web','hardware','calc','notes','synth','settings'].forEach(id=>addGridTile({icon:({whatsapp:'💬',web:'🌐',hardware:'🧬',calc:'🧮',notes:'📝',synth:'🎹',settings:'⚙️'})[id],label:APPS[id].title,app:id}));
+}
+buildGrid();
 
 /* ============ CÂMERA AR ============ */
 let stream=null;
