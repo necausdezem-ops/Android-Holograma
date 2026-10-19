@@ -56,3 +56,23 @@ jobs:
           path: holobridge/build/outputs/apk/debug/holobridge-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+  build-windows:
+    name: Build HoloBridge for Windows 10 x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish HoloBridge PC
+        run: dotnet publish HoloBridgePC/HoloBridgePC.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/HoloBridgePC
+      - name: Upload HoloBridge Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: HoloBridge-Windows-x64
+          path: publish/HoloBridgePC/
+          if-no-files-found: error
+          retention-days: 14
