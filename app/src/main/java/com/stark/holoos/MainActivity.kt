@@ -2,6 +2,7 @@ package com.stark.holoos
 
 import android.Manifest
 import android.app.Activity
+import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -32,7 +33,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
 import org.json.JSONArray
 import org.json.JSONObject
-import org.json.JSONArray
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var assetLoader: WebViewAssetLoader
     private lateinit var voiceLauncher: ActivityResultLauncher<Intent>
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var homeRoleLauncher: ActivityResultLauncher<Intent>
     private var pendingWebPermission: PermissionRequest? = null
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -67,6 +68,10 @@ class MainActivity : ComponentActivity() {
             if (::webView.isInitialized) {
                 webView.post { webView.evaluateJavascript("window.holoNativeVoiceResult && window.holoNativeVoiceResult($quoted);", null) }
             }
+        }
+
+        homeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            Toast.makeText(this, if (result.resultCode == Activity.RESULT_OK) "Launcher padrão atualizado." else "Seleção de launcher cancelada.", Toast.LENGTH_SHORT).show()
         }
 
         cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -208,6 +213,32 @@ class MainActivity : ComponentActivity() {
                 val uri = Uri.parse(url)
                 if (uri.scheme in listOf("https", "http", "tel", "mailto", "geo")) openExternal(url)
                 else Toast.makeText(this@MainActivity, "Link bloqueado por segurança.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        @JavascriptInterface
+        fun requestHomeRole() {
+            runOnUiThread {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val manager = getSystemService(RoleManager::class.java)
+                        if (manager != null && manager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                            if (!manager.isRoleHeld(RoleManager.ROLE_HOME)) {
+                                homeRoleLauncher.launch(manager.createRequestRoleIntent(RoleManager.ROLE_HOME))
+                            } else {
+                                Toast.makeText(this@MainActivity, "STARK HoloOS já é o launcher padrão.", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            startActivity(Intent("android.settings.HOME_SETTINGS"))
+                        }
+                    } else {
+                        startActivity(Intent("android.settings.HOME_SETTINGS"))
+                    }
+                } catch (_: Exception) {
+                    try { startActivity(Intent("android.settings.HOME_SETTINGS")) } catch (_: Exception) {
+                        Toast.makeText(this@MainActivity, "Abra Configurações > Apps padrão > App de início.", Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
 
