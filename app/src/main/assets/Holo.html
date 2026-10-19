@@ -593,6 +593,7 @@ const APPS={
       <div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn" id="saveKey">💾 Salvar chave</button><button class="btn" id="clearKey">🗑 Limpar</button></div>
       <small id="keyStatus" style="opacity:.8;text-align:left">Nenhuma chave configurada</small>
     </div>
+    <button class="btn" id="setLauncher">🏠 Definir como launcher padrão</button>
     <button class="btn" id="goSettings">⚙️ Mais ajustes</button>`;
     const key=c.querySelector('#gemKey'),status=c.querySelector('#keyStatus');
     key.value=saved;
@@ -602,6 +603,7 @@ const APPS={
     c.querySelector('#saveKey').onclick=()=>{try{if(window.HoloBridge)HoloBridge.setGeminiApiKey(key.value);else localStorage.setItem('geminiApiKey',key.value);notify({icon:'🔐',title:'Configuração salva',desc:'A chave Gemini foi salva localmente neste aparelho.'});refresh()}catch(e){status.textContent='Não foi possível salvar a chave.'}};
     c.querySelector('#clearKey').onclick=()=>{key.value='';try{if(window.HoloBridge)HoloBridge.setGeminiApiKey('');else localStorage.removeItem('geminiApiKey')}catch(e){}refresh()};
     c.querySelectorAll('.sw').forEach(s=>s.onclick=()=>{setTheme(+s.dataset.i);sfx.tick();c.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===s))});
+    c.querySelector('#setLauncher').onclick=()=>{if(window.HoloBridge)HoloBridge.requestHomeRole();else notify({icon:'🏠',title:'Launcher Android',desc:'Instale a versão Android para escolher o launcher padrão.'})};
     c.querySelector('#goSettings').onclick=()=>openApp('settings');
   }},
   settings:{title:'Ajustes do sistema',render(c){
@@ -666,20 +668,25 @@ function addGridTile({icon,label,app,url,fn,packageName}){
 }
 function buildGrid(){
  grid.innerHTML='';
- addGridTile({icon:'🎨',label:'J.A.R.V.I.S. Color',app:'jarvisColor'});
+ const search=el('<input class="field" id="appSearch" placeholder="🔎 Buscar apps instalados..." style="grid-column:1/-1;position:sticky;top:0;z-index:3;background:#03101e">');
+ grid.appendChild(search);
+ const tiles=[];
+ const addTile=(o)=>{addGridTile(o);tiles.push({el:grid.lastElementChild,label:(o.label||'').toLowerCase()})};
+ addTile({icon:'🎨',label:'J.A.R.V.I.S. Color',app:'jarvisColor'});
  if(window.HoloBridge){
    try{
      const installed=JSON.parse(HoloBridge.getInstalledApps()||'[]');
-     installed.forEach(a=>addGridTile({icon:iconForApp(a.label),label:a.label,packageName:a.packageName}));
+     installed.forEach(a=>addTile({icon:iconForApp(a.label),label:a.label,packageName:a.packageName}));
    }catch(e){notify({icon:'⚠️',title:'Apps indisponíveis',desc:'Não foi possível ler a lista de aplicativos instalados.'})}
  }else{
    [
     {i:'📞',l:'Telefone',app:'dialer'},{i:'💬',l:'WhatsApp',app:'whatsapp'},{i:'🌐',l:'HoloWeb',app:'web'},{i:'🧬',l:'Hardware',app:'hardware'},
     {i:'🧮',l:'Calc',app:'calc'},{i:'📝',l:'Notas',app:'notes'},{i:'🎹',l:'Laser',app:'synth'},{i:'⚙️',l:'Ajustes',app:'settings'},
     {i:'▶️',l:'YouTube',url:'https://www.youtube.com'},{i:'🛰️',l:'Mapas',url:'https://maps.google.com'},{i:'🌈',l:'Espectro',fn:'theme'}
-   ].forEach(a=>addGridTile({icon:a.i,label:a.l,app:a.app,url:a.url,fn:a.fn}));
+   ].forEach(a=>addTile({icon:a.i,label:a.l,app:a.app,url:a.url,fn:a.fn}));
  }
- ['whatsapp','web','hardware','calc','notes','synth','settings'].forEach(id=>addGridTile({icon:({whatsapp:'💬',web:'🌐',hardware:'🧬',calc:'🧮',notes:'📝',synth:'🎹',settings:'⚙️'})[id],label:APPS[id].title,app:id}));
+ ['whatsapp','web','hardware','calc','notes','synth','settings'].forEach(id=>addTile({icon:({whatsapp:'💬',web:'🌐',hardware:'🧬',calc:'🧮',notes:'📝',synth:'🎹',settings:'⚙️'})[id],label:APPS[id].title,app:id}));
+ search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();tiles.forEach(t=>t.el.style.display=t.label.includes(q)?'':'none')});
 }
 buildGrid();
 
