@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#030812">
+<title>HoloBridge</title>
+<style>
+:root{--cyan:#48f4ff;--blue:#318dff;--muted:#7098ad;--bg:#030812}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 43%,#09243a 0%,#050f20 38%,#030812 76%);color:#e7fbff;font-family:system-ui,-apple-system,sans-serif;touch-action:pan-y}
+body:before{content:"";position:absolute;inset:0;opacity:.2;background-image:linear-gradient(#3adfff15 1px,transparent 1px),linear-gradient(90deg,#3adfff15 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(transparent,black 20%,black 80%,transparent);pointer-events:none}
+.top{position:absolute;top:26px;left:22px;right:22px;display:flex;align-items:center;justify-content:space-between;z-index:2}
+.brand{font-size:12px;letter-spacing:4px;font-weight:800;color:var(--cyan)}.sub{font-size:9px;letter-spacing:2px;color:#7296a8;margin-top:5px}
+.pill{border:1px solid #3ce9ff55;border-radius:20px;padding:7px 10px;font-size:9px;letter-spacing:1px;color:#80f8ff;background:#0b263b99}
+main{position:absolute;inset:90px 0 0;display:flex;align-items:center;flex-direction:column}
+.head{text-align:center;margin-top:10px}.head h1{font-size:clamp(23px,7vw,31px);letter-spacing:5px;margin:0;font-weight:500;text-shadow:0 0 20px #2deaff66}.head p{font-size:10px;letter-spacing:2px;color:#7196a9;margin:10px 0}
+.stage{position:relative;width:min(82vw,340px);height:min(78vw,320px);margin-top:13px;display:grid;place-items:center}
+.ring{position:absolute;width:72%;aspect-ratio:1;border:1px solid #44eaff8a;border-radius:50%;box-shadow:0 0 28px #0bcaff26,inset 0 0 24px #0bcaff13;animation:spin 14s linear infinite}
+.ring:before,.ring:after{content:"";position:absolute;border:1px dashed #43dfff60;border-radius:50%;inset:12%;}.ring:after{inset:-9%;border-style:solid;border-color:#2f8fff50 transparent #2f8fff50 transparent;animation:spin 8s linear infinite reverse}
+.core{position:absolute;width:46%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 50%,#c8ffff 0%,#4af2ff 3%,#1385d9 15%,#0b3764 43%,#06182d 66%,transparent 70%);filter:drop-shadow(0 0 18px #26cfff);animation:pulse 2.4s ease-in-out infinite}
+.orbit{position:absolute;width:92%;height:26%;border:1px solid #4aefff8a;border-radius:50%;transform:rotate(-24deg);box-shadow:0 0 12px #0acaff22}
+.node{position:absolute;width:7px;height:7px;border-radius:50%;background:#a8ffff;box-shadow:0 0 13px 4px #21cfff;top:12%;left:26%}
+.holo{position:absolute;z-index:3;width:104px;height:104px;display:grid;place-items:center;touch-action:none;user-select:none;cursor:grab;border:1px solid #6df7ff9c;border-radius:24px;background:linear-gradient(145deg,#1bdcff19,#236dff12);box-shadow:0 0 24px #20dfff28,inset 0 0 25px #35caff0b;transition:box-shadow .2s}
+.holo:before{content:"";position:absolute;inset:7px;border:1px solid #53dfff30;border-radius:17px}
+.holo .glyph{font-size:38px;color:#a5fbff;text-shadow:0 0 18px #27eaff}
+.holo small{position:absolute;bottom:12px;font-size:8px;letter-spacing:2px;color:#a8faff}
+.holo.dragging{box-shadow:0 0 38px #29eaff9c,inset 0 0 24px #35caff25;transform:scale(1.08)}
+.hint{margin-top:0;text-align:center;font-size:10px;letter-spacing:2px;color:#85a8ba;line-height:1.8}.hint strong{color:#54efff;font-weight:600}
+.target{position:absolute;bottom:112px;width:min(84vw,340px);border:1px solid #2c7b9a66;background:#071a2a99;padding:13px 15px;border-radius:14px;display:flex;align-items:center;justify-content:space-between}
+.target .label{font-size:9px;letter-spacing:2px;color:#77a5b8}.target .device{font-size:12px;margin-top:5px}.target .dot{width:8px;height:8px;border-radius:50%;background:#ffcc6a;box-shadow:0 0 12px #ffcc6a}
+.bottom{position:absolute;bottom:28px;left:22px;right:22px;text-align:center;color:#4e7184;font-size:8px;letter-spacing:2px}
+.status{position:absolute;top:15%;left:0;right:0;text-align:center;font-size:10px;letter-spacing:3px;color:var(--cyan);opacity:0;transition:opacity .3s}.status.show{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:.75;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media(min-height:780px){.stage{margin-top:34px}.target{bottom:125px}}
+</style>
+</head>
+<body>
+<header class="top"><div><div class="brand">HOLO<span style="color:#fff">BRIDGE</span></div><div class="sub">QUANTUM TRANSFER INTERFACE</div></div><div class="pill">● STANDBY</div></header>
+<main>
+<div class="head"><h1>BRIDGE LINK</h1><p>PORTAL DE TRANSMISSÃO</p></div>
+<div class="stage" id="stage">
+<div class="ring"></div><div class="orbit"></div><div class="node"></div><div class="core"></div>
+<div class="status" id="status">INICIANDO TRANSMISSÃO</div>
+<div class="holo" id="holo" role="button" aria-label="Segure e arraste para cima para transmitir"><span class="glyph">◇</span><small>HOLO DATA</small></div>
+</div>
+<div class="hint" id="hint">SEGURE O HOLOGRAMA<br><strong>↑ ARRASTE PARA CIMA</strong><br>PARA ABRIR A PONTE</div>
+<div class="target"><div><div class="label">DESTINO DA PONTE</div><div class="device">Dispositivo receptor · não conectado</div></div><div class="dot"></div></div>
+</main>
+<div class="bottom">HOLOBRIDGE OS // LINK LOCAL AINDA NÃO CONFIGURADO</div>
+<script>
+const holo=document.getElementById('holo'),stage=document.getElementById('stage'),status=document.getElementById('status'),hint=document.getElementById('hint');
+let startY=0,startX=0,dragging=false,longPress=false,timer=null,originX=0,originY=0;
+function point(e){return {x:e.clientX,y:e.clientY}}
+holo.addEventListener('pointerdown',e=>{e.preventDefault();const p=point(e);startY=p.y;startX=p.x;originX=p.x;originY=p.y;longPress=false;dragging=false;timer=setTimeout(()=>{longPress=true;dragging=true;holo.classList.add('dragging');holo.setPointerCapture?.(e.pointerId);hint.innerHTML='HOLOGRAMA SELECIONADO<br><strong>ARRASTE PARA CIMA PARA TRANSMITIR</strong>';},260);});
+window.addEventListener('pointermove',e=>{if(!timer&&!dragging)return;const p=point(e);if(!longPress&&Math.abs(p.y-startY)>12){clearTimeout(timer);timer=null;return;}if(dragging){holo.style.left=(p.x-stage.getBoundingClientRect().left-52)+'px';holo.style.top=(p.y-stage.getBoundingClientRect().top-52)+'px';holo.style.position='absolute';}});
+function finish(e){clearTimeout(timer);timer=null;if(!dragging)return;const p=point(e);const movedUp=startY-p.y>65;holo.classList.remove('dragging');holo.style.left='';holo.style.top='';holo.style.position='';dragging=false;longPress=false;if(movedUp){status.classList.add('show');status.textContent='PONTE SOLICITADA';hint.innerHTML='SINAL PREPARADO<br><strong>AGUARDANDO DISPOSITIVO RECEPTOR</strong>';setTimeout(()=>{status.classList.remove('show');hint.innerHTML='SEGURE O HOLOGRAMA<br><strong>↑ ARRASTE PARA CIMA</strong><br>PARA ABRIR A PONTE';},3500);}else{hint.innerHTML='GESTO CANCELADO<br><strong>TENTE ARRASTAR PARA CIMA</strong>';setTimeout(()=>hint.innerHTML='SEGURE O HOLOGRAMA<br><strong>↑ ARRASTE PARA CIMA</strong><br>PARA ABRIR A PONTE',1800);}}
+window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
+</script>
+</body></html>
