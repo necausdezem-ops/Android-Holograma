@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Android-Holograma"
-include(":app")
+include(":app", ":holobridge")
