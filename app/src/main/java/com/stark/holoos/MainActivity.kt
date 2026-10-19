@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
@@ -31,6 +32,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
 import org.json.JSONArray
 import org.json.JSONObject
+import org.json.JSONArray
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -207,6 +209,49 @@ class MainActivity : ComponentActivity() {
                 if (uri.scheme in listOf("https", "http", "tel", "mailto", "geo")) openExternal(url)
                 else Toast.makeText(this@MainActivity, "Link bloqueado por segurança.", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        @JavascriptInterface
+        fun getInstalledApps(): String {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val apps = packageManager.queryIntentActivities(intent, 0)
+                .mapNotNull { info ->
+                    val appInfo = info.activityInfo?.applicationInfo ?: return@mapNotNull null
+                    if (appInfo.packageName == packageName) return@mapNotNull null
+                    JSONObject().apply {
+                        put("label", info.loadLabel(packageManager).toString())
+                        put("packageName", appInfo.packageName)
+                    }
+                }
+                .distinctBy { it.optString("packageName") }
+                .sortedBy { it.optString("label").lowercase(Locale.ROOT) }
+            return JSONArray(apps).toString()
+        }
+
+        @JavascriptInterface
+        fun launchApp(packageName: String) {
+            runOnUiThread {
+                try {
+                    if (packageName == this@MainActivity.packageName) return@runOnUiThread
+                    val launch = packageManager.getLaunchIntentForPackage(packageName)
+                    if (launch != null) startActivity(launch)
+                    else Toast.makeText(this@MainActivity, "Esse aplicativo não tem um atalho de inicialização.", Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this@MainActivity, "Não foi possível abrir esse aplicativo.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun getGeminiApiKey(): String {
+            return getSharedPreferences("holo_private_settings", Context.MODE_PRIVATE)
+                .getString("gemini_api_key", "").orEmpty()
+        }
+
+        @JavascriptInterface
+        fun setGeminiApiKey(key: String) {
+            getSharedPreferences("holo_private_settings", Context.MODE_PRIVATE)
+                .edit().putString("gemini_api_key", key.trim()).apply()
         }
 
         @JavascriptInterface
