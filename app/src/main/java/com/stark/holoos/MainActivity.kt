@@ -190,6 +190,36 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+        @JavascriptInterface
+        fun sendHologram(ip: String, pin: String, type: String, title: String, payload: String) {
+            val host = ip.trim()
+            val code = pin.trim()
+            if (!host.matches(Regex("^[0-9]{1,3}(\\.[0-9]{1,3}){3}$")) || code.length !in 4..8) {
+                Toast.makeText(this@MainActivity, "Informe o IP local do PC e o PIN de 4 a 8 dígitos.", Toast.LENGTH_LONG).show()
+                return
+            }
+            Thread {
+                var message = "Falha ao transmitir. Verifique a rede e o PIN."
+                try {
+                    val connection = java.net.URL("http://$host:47821/holo").openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "POST"
+                    connection.connectTimeout = 3500
+                    connection.readTimeout = 5000
+                    connection.doOutput = true
+                    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    val body = JSONObject().put("pin", code).put("type", type.take(20)).put("title", title.take(120)).put("payload", payload.take(12000)).toString()
+                    connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                    val statusCode = connection.responseCode
+                    message = if (statusCode in 200..299) "Holograma transmitido ao PC." else if (statusCode == 401) "PIN incorreto. Confira o código no HoloBridge do PC." else "O PC recusou a transmissão (HTTP $statusCode)."
+                    connection.disconnect()
+                } catch (_: Exception) {
+                    message = "Não foi possível conectar. Confirme IP, Wi-Fi e se o HoloBridge está aberto."
+                }
+                runOnUiThread { Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show() }
+            }.start()
+        }
+
     private inner class HoloBridge {
         @JavascriptInterface
         fun startVoice() {
