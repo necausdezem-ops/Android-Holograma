@@ -1,5 +1,6 @@
 package com.stark.holoos
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.BatteryManager
@@ -76,10 +77,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun HoloOS(activity: ComponentActivity) {
-    var themeIndex by remember { mutableIntStateOf(0) }
+    val prefs = remember { activity.getSharedPreferences("holoos_preferences", Context.MODE_PRIVATE) }
+    var themeIndex by remember { mutableIntStateOf(prefs.getInt("themeIndex", 0).coerceIn(0, holoThemes.lastIndex)) }
     var showSettings by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(false) }
-    var notes by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf(prefs.getString("notes", "") ?: "") }
+    var appSearch by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("J.A.R.V.I.S. online • toque no reator para falar") }
     var now by remember { mutableStateOf(Date()) }
     var voiceCommand by remember { mutableStateOf("") }
@@ -96,6 +99,11 @@ private fun HoloOS(activity: ComponentActivity) {
             voiceCommand.contains("youtube") -> { status = "Abrindo YouTube"; openPackage(activity, "com.google.android.youtube") }
             voiceCommand.contains("tema") || voiceCommand.contains("cor") -> { themeIndex = (themeIndex + 1) % holoThemes.size; status = "Frequência de cor alterada" }
             voiceCommand.contains("nota") -> { showNotes = true; status = "Notas holográficas" }
+            voiceCommand.contains("camera") || voiceCommand.contains("câmera") || voiceCommand.contains("foto") -> { status = "Abrindo câmera"; openIntent(activity, Intent("android.media.action.IMAGE_CAPTURE")) }
+            voiceCommand.contains("mapa") || voiceCommand.contains("rota") -> { status = "Abrindo mapas"; openIntent(activity, Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://maps.google.com"))) }
+            voiceCommand.contains("configura") || voiceCommand.contains("ajustes") -> { showSettings = true; status = "Ajustes HoloOS" }
+            voiceCommand.contains("naveg") || voiceCommand.contains("internet") || voiceCommand.contains("site") -> { status = "Abrindo navegador"; openIntent(activity, Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))) }
+            voiceCommand.contains("telefone") || voiceCommand.contains("ligar") -> { status = "Abrindo telefone"; openIntent(activity, Intent(Intent.ACTION_DIAL)) }
             voiceCommand.contains("hora") -> { status = "Senhor, agora são " + SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date()) }
             else -> status = if (spoken.isNotBlank()) "Comando recebido: $spoken" else "Nenhum comando reconhecido"
         }
@@ -104,6 +112,8 @@ private fun HoloOS(activity: ComponentActivity) {
     LaunchedEffect(Unit) {
         while (true) { now = Date(); delay(1000) }
     }
+    LaunchedEffect(themeIndex) { prefs.edit().putInt("themeIndex", themeIndex).apply() }
+    LaunchedEffect(notes) { prefs.edit().putString("notes", notes).apply() }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = accent, background = bg, surface = Color(0xFF061426))) {
         Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF071A2E), bg)))) {
@@ -122,7 +132,7 @@ private fun HoloOS(activity: ComponentActivity) {
                         Text("STARK HOLO-OS", color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                         Text("SISTEMA PESSOAL • v13", color = Color.White.copy(.55f), fontSize = 9.sp, letterSpacing = 1.2.sp)
                     }
-                    val bm = remember { activity.getSystemService(BATTERY_SERVICE) as BatteryManager }
+                    val bm = remember { activity.getSystemService(Context.BATTERY_SERVICE) as BatteryManager }
                     val battery = remember { bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).coerceIn(0, 100) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.BatteryFull, null, tint = accent, modifier = Modifier.size(16.dp))
@@ -156,6 +166,20 @@ private fun HoloOS(activity: ComponentActivity) {
 
                 Text("MÓDULOS DO SISTEMA", color = accent.copy(.75f), fontSize = 10.sp, letterSpacing = 2.sp, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
                 val apps = remember { loadApps(activity) }
+                val visibleApps = remember(apps, appSearch) { apps.filter { it.label.contains(appSearch, ignoreCase = true) }.take(20) }
+                OutlinedTextField(
+                    value = appSearch,
+                    onValueChange = { appSearch = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    singleLine = true,
+                    placeholder = { Text("Buscar aplicativo instalado…", color = Color.White.copy(.45f)) },
+                    leadingIcon = { Text("⌕", color = accent, fontSize = 20.sp) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = accent, unfocusedBorderColor = accent.copy(.4f),
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        cursorColor = accent
+                    )
+                )
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(4),
                     modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -173,7 +197,7 @@ private fun HoloOS(activity: ComponentActivity) {
                     item { HoloTile("🛰️", "Mapas", accent) { openIntent(activity, Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://maps.google.com"))) } }
                     item { HoloTile("⚙️", "Ajustes", accent) { showSettings = true } }
                     item { HoloTile("📦", "Aplicativos", accent) { status = "Toque em um aplicativo abaixo para abri-lo"; showSettings = true } }
-                    items(apps.take(20)) { app ->
+                    items(visibleApps) { app ->
                         HoloTile("◇", app.label, accent) {
                             try {
                                 val launch = activity.packageManager.getLaunchIntentForPackage(app.packageName)
