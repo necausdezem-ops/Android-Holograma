@@ -731,6 +731,42 @@ function buildGrid(){
 }
 buildGrid();
 
+/* Gestos de launcher: deslizar para abrir a biblioteca e arrastar o reator */
+let swipeStart=null;
+document.addEventListener('pointerdown',e=>{
+ if(e.target.closest('#orb')||e.target.closest('.win')||e.target.closest('#grid input'))return;
+ swipeStart={x:e.clientX,y:e.clientY,id:e.pointerId};
+},{passive:true});
+document.addEventListener('pointerup',e=>{
+ if(!swipeStart)return;
+ const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;
+ swipeStart=null;
+ if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){
+   if(dx<0){document.body.classList.remove('launcher-home');document.body.classList.add('apps-view')}
+   else{document.body.classList.remove('apps-view');document.body.classList.add('launcher-home')}
+ }
+},{passive:true});
+(()=>{
+ const orb=$('#orb');let drag=null,moved=false;
+ orb.addEventListener('pointerdown',e=>{
+   drag={x:e.clientX,y:e.clientY,left:orb.getBoundingClientRect().left+orb.offsetWidth/2,top:orb.getBoundingClientRect().top+orb.offsetHeight/2};
+   moved=false;orb.setPointerCapture(e.pointerId);e.stopPropagation();
+ });
+ orb.addEventListener('pointermove',e=>{
+   if(!drag)return;
+   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+   if(Math.abs(dx)+Math.abs(dy)>7)moved=true;
+   if(moved){
+     const x=clamp(drag.left+dx,orb.offsetWidth*.5,innerWidth-orb.offsetWidth*.5);
+     const y=clamp(drag.top+dy,orb.offsetHeight*.5,innerHeight-orb.offsetHeight*.5);
+     orb.style.left=x+'px';orb.style.top=y+'px';orb.style.transform='translate(-50%,-50%)';
+   }
+ });
+ const finish=()=>{if(moved){orb.dataset.dragged='1';setTimeout(()=>delete orb.dataset.dragged,180)}drag=null};
+ orb.addEventListener('pointerup',finish);orb.addEventListener('pointercancel',finish);
+ orb.addEventListener('click',e=>{if(orb.dataset.dragged==='1'){e.stopImmediatePropagation();e.preventDefault()}},true);
+})();
+
 /* ============ CÂMERA AR ============ */
 let stream=null;
 async function toggleAR(){
@@ -811,6 +847,7 @@ $('#orb').onclick=listen;stat.onclick=listen;
 
 /* ============ HOME / DOCK ============ */
 async function homeAll(){
+  if(document.body.classList.contains('apps-view')){document.body.classList.remove('apps-view');document.body.classList.add('launcher-home');return}
   let any=false;
   [...nStage.children].forEach(n=>{killNotif(n);any=true});
   if(cur){closeApp();any=true}
@@ -835,6 +872,8 @@ $('#boot').addEventListener('pointerdown',async()=>{
   }
   const b=$('#boot');
   await dem(b,()=>b.remove(),900);
+  document.body.classList.add('launcher-home');
+  $('#pageHint').style.display='block';
   /* materializa a interface em cascata */
   const seq=[$('#statusBar'),$('#quick'),$('#core'),...grid.children,$('#dock')];
   seq.forEach((e,i)=>setTimeout(()=>{e.classList.remove('pre');mat(e,$('#lens'),700);if(i%3===0)tone(500+i*60,1400+i*60,.18,'sine',.05)},i*90));
