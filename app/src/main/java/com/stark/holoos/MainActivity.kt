@@ -246,6 +246,55 @@ class MainActivity : ComponentActivity() {
         }
 
         @JavascriptInterface
+        fun openAppByName(query: String) {
+            runOnUiThread {
+                val q = query.trim().lowercase(Locale.ROOT)
+                if (q.isBlank()) return@runOnUiThread
+                val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                val matches = packageManager.queryIntentActivities(intent, 0)
+                val match = matches.firstOrNull {
+                    it.loadLabel(packageManager).toString().lowercase(Locale.ROOT) == q
+                } ?: matches.firstOrNull {
+                    it.loadLabel(packageManager).toString().lowercase(Locale.ROOT).contains(q)
+                }
+                val targetPackage = match?.activityInfo?.packageName
+                val launch = targetPackage?.let { packageManager.getLaunchIntentForPackage(it) }
+                if (launch != null) startActivity(launch)
+                else Toast.makeText(this@MainActivity, "Não encontrei o aplicativo: $query", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        @JavascriptInterface
+        fun dialNumber(number: String) {
+            runOnUiThread {
+                val digits = number.filter { it.isDigit() || it == '+' }
+                if (digits.count { it.isDigit() } < 7) {
+                    Toast.makeText(this@MainActivity, "Número de telefone inválido.", Toast.LENGTH_SHORT).show()
+                    return@runOnUiThread
+                }
+                try { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$digits"))) }
+                catch (_: Exception) { Toast.makeText(this@MainActivity, "Não foi possível abrir o discador.", Toast.LENGTH_SHORT).show() }
+            }
+        }
+
+        @JavascriptInterface
+        fun sendWhatsAppMessage(number: String, message: String) {
+            runOnUiThread {
+                val digits = number.filter { it.isDigit() }
+                if (digits.length < 10 || message.isBlank()) {
+                    Toast.makeText(this@MainActivity, "Informe o número com DDI e a mensagem.", Toast.LENGTH_SHORT).show()
+                    return@runOnUiThread
+                }
+                try {
+                    val uri = Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message))
+                    startActivity(Intent(Intent.ACTION_VIEW, uri))
+                } catch (_: Exception) {
+                    Toast.makeText(this@MainActivity, "Não foi possível abrir o WhatsApp.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        @JavascriptInterface
         fun getInstalledApps(): String {
             val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             val apps = packageManager.queryIntentActivities(intent, 0)
