@@ -733,18 +733,27 @@ buildGrid();
 
 /* Gestos de launcher: deslizar para abrir a biblioteca e arrastar o reator */
 let swipeStart=null;
+const changeLauncherPage=dir=>{
+ if(dir<0){document.body.classList.remove('launcher-home');document.body.classList.add('apps-view')}
+ else{document.body.classList.remove('apps-view');document.body.classList.add('launcher-home')}
+};
+document.addEventListener('touchstart',e=>{
+ if(e.touches.length!==1||e.target.closest('#orb')||e.target.closest('.win')||e.target.closest('#grid input'))return;
+ const t=e.touches[0];swipeStart={x:t.clientX,y:t.clientY};
+},{capture:true,passive:true});
+document.addEventListener('touchend',e=>{
+ if(!swipeStart)return;
+ const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;swipeStart=null;
+ if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)*1.15)changeLauncherPage(dx<0?-1:1);
+},{capture:true,passive:true});
 document.addEventListener('pointerdown',e=>{
- if(e.target.closest('#orb')||e.target.closest('.win')||e.target.closest('#grid input'))return;
- swipeStart={x:e.clientX,y:e.clientY,id:e.pointerId};
+ if(e.pointerType==='touch'||e.target.closest('#orb')||e.target.closest('.win')||e.target.closest('#grid input'))return;
+ swipeStart={x:e.clientX,y:e.clientY};
 },{passive:true});
 document.addEventListener('pointerup',e=>{
- if(!swipeStart)return;
- const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;
- swipeStart=null;
- if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){
-   if(dx<0){document.body.classList.remove('launcher-home');document.body.classList.add('apps-view')}
-   else{document.body.classList.remove('apps-view');document.body.classList.add('launcher-home')}
- }
+ if(e.pointerType==='touch'||!swipeStart)return;
+ const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;swipeStart=null;
+ if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)*1.15)changeLauncherPage(dx<0?-1:1);
 },{passive:true});
 (()=>{
  const orb=$('#orb');let drag=null,moved=false;
@@ -821,11 +830,49 @@ const CMDS=[
  [/quem (é|e) voc[eê]|seu nome/,()=>say('Sou o J.A.R.V.I.S., seu assistente holográfico da Stark Industries.')],
  [/ol[aá]|oi\b|bom dia|boa tarde|boa noite/,()=>say('Olá, senhor. Todos os sistemas operacionais. Como posso ajudar?')]
 ];
+function materializeSearch(query){
+ const prior=document.querySelector('#searchHologram');if(prior)prior.remove();
+ const overlay=el('<div id="searchHologram" style="position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,4,12,.72);backdrop-filter:blur(5px)"></div>');
+ overlay.innerHTML=`<div style="width:min(92vw,440px);max-height:78dvh;overflow:auto;position:relative;padding:22px 18px;border:1px solid var(--p);border-radius:22px;background:radial-gradient(ellipse at 50% 0%,rgba(var(--rgb),.2),transparent 65%),linear-gradient(150deg,#061b2c,#02060d);box-shadow:0 0 45px var(--glow),inset 0 0 24px rgba(var(--rgb),.1);color:#e5ffff">
+ <div style="font-size:10px;letter-spacing:3px;color:var(--p)">STARK INDUSTRIES • HOLO-SEARCH</div>
+ <button id="closeHoloSearch" style="position:absolute;right:12px;top:12px;background:transparent;border:1px solid var(--p);color:var(--p);border-radius:10px;padding:5px 9px">✕</button>
+ <div style="font-size:23px;font-weight:800;letter-spacing:2px;margin:15px 0 5px;text-shadow:0 0 14px var(--p)">HOLOGRAMA <span style="color:var(--p)">MATERIALIZADO</span></div>
+ <div style="font-size:10px;opacity:.7;margin-bottom:14px">CONSULTA RECEBIDA</div>
+ <div style="padding:12px;border:1px solid rgba(var(--rgb),.6);border-radius:12px;background:rgba(var(--rgb),.07);font-size:14px;overflow-wrap:anywhere"></div>
+ <p style="font-size:12px;opacity:.85">Selecione uma fonte para ver resultados reais. O J.A.R.V.I.S. não inventa resultados: a pesquisa abre no serviço escolhido.</p>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+ <button class="btn" data-search="google">🔎 Google</button><button class="btn" data-search="youtube">▶ YouTube</button>
+ <button class="btn" data-search="wiki">📚 Wikipédia</button><button class="btn" data-search="news">🛰 Notícias</button>
+ </div></div>`;
+ overlay.querySelector('div div:nth-of-type(4)').textContent=query;
+ overlay.querySelector('#closeHoloSearch').onclick=()=>overlay.remove();
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+ overlay.querySelectorAll('[data-search]').forEach(b=>b.onclick=()=>{
+  const q=encodeURIComponent(query),urls={google:'https://www.google.com/search?q='+q,youtube:'https://www.youtube.com/results?search_query='+q,wiki:'https://pt.wikipedia.org/w/index.php?search='+q,news:'https://news.google.com/search?q='+q};
+  holoOpen(urls[b.dataset.search]);overlay.remove();
+ });
+ document.body.appendChild(overlay);sfx.open();burst($('#orb'),'in',null,.55);
+}
+function openInstalledByName(name){
+ if(window.HoloBridge){HoloBridge.openAppByName(name);return}
+ const n=name.toLowerCase(),a=Object.keys(APPS).find(id=>id.toLowerCase()===n||APPS[id].title.toLowerCase().includes(n));
+ if(a){openApp(a);return}
+ materializeSearch('Abrir aplicativo '+name);
+}
 function runCmd(t){
-  t=t.toLowerCase();
-  for(const [re,fn] of CMDS)if(re.test(t)){fn();return}
-  say(`Não reconheci "${t}". Posso pesquisar na rede.`);
-  notify({icon:'🔎',type:'● J.A.R.V.I.S.',title:'Pesquisar na rede?',desc:`Toque para buscar "${t}" no Google.`,ttl:8000,action:()=>holoOpen('https://www.google.com/search?q='+encodeURIComponent(t))});
+  const raw=t.trim(),lower=raw.toLowerCase();
+  const wa=raw.match(/(?:manda|envia|enviar|mandar)\s+(?:uma\s+)?mensagem\s+(?:no\s+)?whats(?:app)?\s+(?:para|pro|pra)\s+(.+?)\s+(?:dizendo|falando|com\s+a\s+mensagem)\s+(.+)/i);
+  if(wa){const parts=wa[1].trim().match(/^(.*?)(?:\s+(\+?\d[\d\s()-]{7,}))?$/);const number=parts?.[2]?.replace(/\D/g,'');if(number&&window.HoloBridge){HoloBridge.sendWhatsAppMessage(number,wa[2]);say('Preparei a mensagem no WhatsApp. Confira e toque em enviar.');return}openApp('whatsapp');say('Informe o número e a mensagem no painel WhatsApp.');return}
+  const dial=raw.match(/(?:liga(?:r)?|chama(?:r)?)\s+(?:para|pro|pra)\s+([+\d][\d\s()-]{6,})/i);
+  if(dial){if(window.HoloBridge)HoloBridge.dialNumber(dial[1]);else holoOpen('tel:'+dial[1].replace(/[^+\d]/g,''));say('Abrindo o discador para você confirmar a ligação.');return}
+  const app=raw.match(/(?:abre|abrir|inicia|iniciar|executa)\s+(?:o\s+app\s+|aplicativo\s+|app\s+)?(.+)/i);
+  if(app){openInstalledByName(app[1].trim());say('Procurando o aplicativo '+app[1].trim()+'.');return}
+  if(/^(?:pesquisa|pesquisar|procura|procurar|busca|buscar|mostra|mostrar|pesquise|me mostra|me mostre)\s+/i.test(raw)){
+    const q=raw.replace(/^(?:pesquisa(?:r)?|procura(?:r)?|busca(?:r)?|mostra(?:r)?|pesquise|me mostra|me mostre)\s+/i,'').replace(/^(?:por|sobre)\s+/i,'').trim();
+    if(q){say('Materializando a pesquisa holográfica.');materializeSearch(q);return}
+  }
+  for(const [re,fn] of CMDS)if(re.test(lower)){fn();return}
+  say('Materializando resultados para '+raw+'.');materializeSearch(raw);
 }
 window.holoNativeVoiceResult=function(t){orbS.listen=false;if(t){stat.textContent='🗣️ "'+t+'"';runCmd(t)}else setStatus(IDLE,0)};
 window.holoNativeSpeechDone=function(){orbS.speak=false;setTimeout(()=>{if(!orbS.listen&&!orbS.speak)setStatus(IDLE,0)},1200)};
