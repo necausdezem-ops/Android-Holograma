@@ -13,6 +13,9 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Base64
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.RecognizerIntent
@@ -249,9 +252,21 @@ class MainActivity : ComponentActivity() {
                 .mapNotNull { info ->
                     val appInfo = info.activityInfo?.applicationInfo ?: return@mapNotNull null
                     if (appInfo.packageName == packageName) return@mapNotNull null
+                    val iconData = try {
+                        val drawable = info.loadIcon(packageManager)
+                        val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                        val canvas = android.graphics.Canvas(bitmap)
+                        drawable.setBounds(0, 0, 96, 96)
+                        drawable.draw(canvas)
+                        val stream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream)
+                        bitmap.recycle()
+                        Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                    } catch (_: Exception) { "" }
                     JSONObject().apply {
                         put("label", info.loadLabel(packageManager).toString())
                         put("packageName", appInfo.packageName)
+                        put("iconData", iconData)
                     }
                 }
                 .distinctBy { it.optString("packageName") }
