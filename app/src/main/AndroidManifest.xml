@@ -16,7 +16,7 @@
         android:allowBackup="true"
         android:label="STARK HoloOS"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
