@@ -136,6 +136,44 @@ body.ar .holo-screen{box-shadow:inset 0 0 60px rgba(var(--rgb),.25)}
 @media (max-width:500px){.phone-rig{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:none;padding:10px}#notifStage{left:4px;right:4px}}
 @media (prefers-reduced-motion:reduce){.ambient-grid,.laser-scan,.holo-app .app-cube::after{animation:none}}
 @media(max-width:600px){.phone-rig,.holo-screen,.win,.notif{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.ambient-grid{animation:none;opacity:.45}.laser-scan{animation-duration:12s}.app-cube{box-shadow:0 3px 9px rgba(var(--rgb),.15),inset 0 0 7px rgba(var(--rgb),.14)}.holo-app .app-cube::after{animation:none;display:none}.status-bar,.quick,.holo-dock{box-shadow:none}.win{box-shadow:0 0 18px var(--glow),inset 0 0 12px rgba(var(--rgb),.1)}}
+/* HOLO LAUNCHER: home orbit + swipeable app library */
+.app-cube{padding:0}
+.app-cube img.app-icon{width:100%;height:100%;object-fit:contain;border-radius:13px;background:rgba(255,255,255,.04);padding:5px;position:relative;z-index:1}
+#pageHint{display:none;position:fixed;left:0;right:0;bottom:7vh;text-align:center;z-index:500;color:#b9faff;font-size:10px;letter-spacing:3px;text-shadow:0 0 12px var(--p);pointer-events:none}
+#appSearch{grid-column:1/-1;position:sticky;top:0;z-index:4;background:rgba(2,12,25,.96);backdrop-filter:blur(8px);margin-bottom:8px}
+body.launcher-home .phone-rig{background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:0;overflow:visible}
+body.launcher-home .phone-rig>.glare,body.launcher-home .phone-rig>.projector-lens,body.launcher-home .holo-screen>.laser-scan,body.launcher-home #statusBar,body.launcher-home #quick,body.launcher-home #clock,body.launcher-home #date,body.launcher-home #jstatus,body.launcher-home #dock,body.launcher-home #pageHint{display:none!important}
+body.launcher-home .holo-screen{position:fixed;inset:0;border:0;border-radius:0;background:transparent;overflow:visible;padding:0;margin:0;pointer-events:none}
+body.launcher-home .holo-screen:before,body.launcher-home .holo-screen:after{display:none}
+body.launcher-home #core{position:fixed;inset:0;display:block!important;pointer-events:none;transform:none;z-index:500}
+body.launcher-home #orb{position:fixed;left:50%;top:47%;width:clamp(128px,43vw,190px);height:clamp(128px,43vw,190px);transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;filter:drop-shadow(0 0 18px var(--glow));z-index:510}
+body.launcher-home #orbC{width:100%;height:100%}
+body.launcher-home .apps-grid{display:none}
+body.launcher-home #notifStage{position:fixed;top:12px;left:12px;right:12px;z-index:600;pointer-events:none}
+body.apps-view #bg{opacity:.32}
+body.apps-view .phone-rig{background:transparent;border:0;box-shadow:none;backdrop-filter:none}
+body.apps-view .holo-screen{position:fixed;inset:0;border:0;border-radius:0;background:transparent;overflow:visible;padding:0;margin:0}
+body.apps-view .holo-screen:before,body.apps-view .holo-screen:after{display:none}
+body.apps-view #statusBar,body.apps-view #quick,body.apps-view #clock,body.apps-view #date,body.apps-view #jstatus,body.apps-view #dock{display:none!important}
+body.apps-view #core{position:fixed;inset:0;display:block!important;pointer-events:none;transform:none;z-index:510}
+body.apps-view #orb{position:fixed;left:50%;top:7%;width:78px;height:78px;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;z-index:520;filter:drop-shadow(0 0 12px var(--glow))}
+body.apps-view .orb-label{font-size:7px}
+body.apps-view .orb-label b{font-size:8px}
+body.apps-view .apps-grid{position:fixed;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 12px;left:5vw;right:5vw;top:15vh;bottom:9vh;width:auto;max-height:none;overflow-y:auto;margin:0;padding:14px;border:1px solid var(--border);border-radius:22px;background:linear-gradient(145deg,rgba(2,18,34,.9),rgba(1,5,14,.88));box-shadow:0 0 30px rgba(var(--rgb),.15),inset 0 0 25px rgba(var(--rgb),.07);transform:none;align-content:start;backdrop-filter:blur(8px);z-index:505}
+body.apps-view .holo-app{min-width:0;gap:7px}
+body.apps-view .app-cube{width:clamp(48px,15vw,66px);height:clamp(48px,15vw,66px);border-radius:17px}
+body.apps-view .holo-app span{font-size:9px;max-width:100%;overflow-wrap:anywhere}
+body.apps-view #pageHint{display:block;bottom:3vh}
+body.launcher-home #pageHint{display:block}
+body.launcher-home #pageHint:after{content:"DESLIZE PARA ABRIR OS APLICATIVOS"}
+body.apps-view #pageHint:after{content:"DESLIZE PARA VOLTAR AO J.A.R.V.I.S."}
+#boot{background:radial-gradient(ellipse at 50% 40%,rgba(0,225,255,.14),transparent 25%),radial-gradient(circle at center,#04101f 0%,#010409 72%);overflow:hidden}
+#boot:before{content:"";position:absolute;width:min(70vw,310px);aspect-ratio:1;border-radius:50%;border:1px solid rgba(var(--rgb),.55);box-shadow:0 0 28px rgba(var(--rgb),.2),inset 0 0 32px rgba(var(--rgb),.13);background:repeating-conic-gradient(from 0deg,rgba(var(--rgb),.45) 0deg 1deg,transparent 1deg 9deg);mask-image:radial-gradient(circle,transparent 0 42%,#000 43% 44%,transparent 45% 49%,#000 50% 51%,transparent 52% 60%,#000 61% 62%,transparent 63%);animation:bootSpin 28s linear infinite;pointer-events:none}
+#boot h1{position:relative;z-index:1;font-size:clamp(23px,6vw,36px);letter-spacing:clamp(5px,2vw,11px);text-align:center}
+#bootLog,#bootBar,#bootTap{position:relative;z-index:1}
+@keyframes bootSpin{to{transform:rotate(360deg)}}
+@media(max-width:420px){body.apps-view .apps-grid{grid-template-columns:repeat(4,minmax(0,1fr));left:3vw;right:3vw;padding:10px;gap:15px 6px}body.apps-view .holo-app span{font-size:8px}}
+
 </style>
 </head>
 <body>
@@ -189,6 +227,7 @@ body.ar .holo-screen{box-shadow:inset 0 0 60px rgba(var(--rgb),.25)}
       <button class="btn" id="winClose">💥 Desintegrar janela</button>
     </div>
 
+    <div id="pageHint">◂ SWIPE ▸</div>
     <div class="holo-dock pre" id="dock">
       <button class="dock-btn" data-d="notify" title="Notificação">📡</button>
       <button class="dock-btn" data-d="phone" title="Telefone">📲</button>
@@ -654,8 +693,9 @@ const iconForApp=(label)=>{
  if(/gemini|chatgpt|ai|assistant/.test(n))return '🤖';if(/play store|store/.test(n))return '🛍️';
  return '📱';
 };
-function addGridTile({icon,label,app,url,fn,packageName}){
- const d=el(`<div class="holo-app"><div class="app-cube">${icon}</div><span></span></div>`);
+function addGridTile({icon,label,app,url,fn,packageName,iconData}){
+ const d=el(`<div class="holo-app"><div class="app-cube">${iconData?'<img class="app-icon" alt="">':icon}</div><span></span></div>`);
+ if(iconData){const img=d.querySelector('img');img.src='data:image/png;base64,'+iconData;img.onerror=()=>{img.remove();d.querySelector('.app-cube').textContent=iconForApp(label)}}
  d.querySelector('span').textContent=label;
  d.title=label;
  d.onclick=()=>{
@@ -677,7 +717,7 @@ function buildGrid(){
  if(window.HoloBridge){
    try{
      const installed=JSON.parse(HoloBridge.getInstalledApps()||'[]');
-     installed.forEach(a=>addTile({icon:iconForApp(a.label),label:a.label,packageName:a.packageName}));
+     installed.forEach(a=>addTile({icon:iconForApp(a.label),label:a.label,packageName:a.packageName,iconData:a.iconData}));
    }catch(e){notify({icon:'⚠️',title:'Apps indisponíveis',desc:'Não foi possível ler a lista de aplicativos instalados.'})}
  }else{
    [
