@@ -969,6 +969,33 @@ $('#boot').addEventListener('pointerdown',async()=>{
     speak('Bem-vindo de volta, senhor.');
   },seq.length*90+500);
 });
+
+/* ============ HOLOBRIDGE: TRANSMITIR CONTEÚDO AO PC ============ */
+let holoDragState=null;
+function holoBridgeSendSelection(el){
+ const title=(el.querySelector('h1,h2,h3,h4,.win-title,.nh,.app-name,span')?.textContent||el.getAttribute('aria-label')||'Conteúdo HoloOS').trim().slice(0,120);
+ let payload=(el.innerText||el.textContent||'').trim().slice(0,12000);
+ const link=el.querySelector('a[href]'); if(link?.href) payload=link.href+'\n\n'+payload;
+ const urlMatch=payload.match(/https?:\/\/[^\s]+/); const type=urlMatch?'link':(/youtube|vídeo|video/i.test(title)?'video':'text');
+ if(!payload){notify({icon:'🔗',title:'HoloBridge',desc:'Este conteúdo não possui dados para transmitir.'});return}
+ let ip=localStorage.getItem('holoBridgeIp')||'',pin=localStorage.getItem('holoBridgePin')||'';
+ ip=prompt('IP do PC com HoloBridge (ex.: 192.168.1.20):',ip); if(!ip)return;
+ pin=prompt('PIN de pareamento mostrado no HoloBridge do PC:',pin); if(!pin)return;
+ localStorage.setItem('holoBridgeIp',ip.trim());localStorage.setItem('holoBridgePin',pin.trim());
+ if(window.HoloBridge?.sendHologram){HoloBridge.sendHologram(ip.trim(),pin.trim(),type,title,payload);notify({icon:'🌀',title:'HoloBridge',desc:'Enviando conteúdo ao PC…'});}
+ else notify({icon:'🌀',title:'HoloBridge',desc:'A interface de transmissão precisa da versão Android atualizada.'});
+}
+document.addEventListener('pointerdown',e=>{
+ const target=e.target.closest('.notif,#searchHologram,.holo-app,.win-content .kv,.win-content .chip');
+ if(!target||target.closest('button,input,textarea,a'))return;
+ holoDragState={target,y:e.clientY,x:e.clientX,done:false,timer:setTimeout(()=>{if(holoDragState){holoDragState.armed=true;target.style.filter='drop-shadow(0 0 12px var(--p))';}},420)};
+},{capture:true});
+document.addEventListener('pointerup',e=>{
+ const d=holoDragState;if(!d)return;clearTimeout(d.timer);holoDragState=null;
+ d.target.style.filter='';
+ if(d.armed&&d.y-e.clientY>65&&Math.abs(d.x-e.clientX)<100){e.preventDefault();e.stopPropagation();holoBridgeSendSelection(d.target)}
+},{capture:true});
+
 </script>
 </body>
 </html>
