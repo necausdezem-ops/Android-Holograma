@@ -69,11 +69,11 @@ body.ar .phone-rig{background:linear-gradient(135deg,rgba(var(--rgb),.04),rgba(0
 .jstatus{margin-top:6px;font-size:11px;letter-spacing:1px;color:#fff;background:rgba(var(--rgb),.14);border:1px solid var(--border);padding:6px 14px;border-radius:16px;cursor:pointer;text-shadow:0 0 8px var(--p);max-width:100%;text-align:center;min-height:30px;display:flex;align-items:center}
 
 /* APPS */
-.apps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;transform:translateZ(38px);margin-bottom:6px}
+.apps-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;transform:translateZ(8px);margin-bottom:6px;max-height:31dvh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .holo-app{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:transform .2s}
 .holo-app:hover,.holo-app:active{transform:translateY(-5px) scale(1.08)}
 .app-cube{width:52px;height:52px;border-radius:15px;background:linear-gradient(180deg,rgba(var(--rgb),.26),rgba(var(--rgb),.05));border:1px solid var(--p);box-shadow:0 6px 16px rgba(var(--rgb),.22),inset 0 0 12px rgba(var(--rgb),.25);display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;overflow:hidden;color:#fff}
-.app-cube::after{content:"";position:absolute;left:-60%;top:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);animation:shine 4.5s infinite}
+.app-cube::after{content:"";position:absolute;left:-60%;top:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);animation:shine 7s infinite}
 .holo-app:nth-child(3n) .app-cube::after{animation-delay:1.2s}.holo-app:nth-child(3n+1) .app-cube::after{animation-delay:2.4s}
 @keyframes shine{0%,70%{left:-60%}100%{left:130%}}
 .holo-app span{font-size:9px;letter-spacing:.8px;color:#d8fcff;text-transform:uppercase;text-shadow:0 0 6px var(--p);text-align:center}
@@ -194,7 +194,9 @@ const $=s=>document.querySelector(s);
 function holoOpen(url){try{if(window.HoloBridge){window.HoloBridge.openUrl(String(url));return}}catch(e){}window.open(String(url),'_blank','noopener');}
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const DPR=Math.min(window.devicePixelRatio||1,2);
+const IS_NATIVE=!!window.HoloBridge;
+const LOW_POWER=IS_NATIVE||innerWidth<600;
+const DPR=Math.min(window.devicePixelRatio||1,LOW_POWER?1.25:1.75);
 
 /* ============ CONFIG SALVA ============ */
 const S={sound:true,vib:true,fx:1,theme:0};
@@ -257,7 +259,7 @@ const SWEEP=.55;
 function burst(el,mode,from,boost=1){
   if(!S.fx||!el)return;
   const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;
-  const n=Math.floor(clamp(r.width*r.height/220,30,900*S.fx)*boost),now=performance.now(),DUR=mode==='out'?620:720;
+  const n=Math.floor(clamp(r.width*r.height/(LOW_POWER?650:360),12,(LOW_POWER?180:520)*S.fx)*boost),now=performance.now(),DUR=mode==='out'?420:480;
   for(let i=0;i<n;i++){
     const tx=r.left+Math.random()*r.width,ty=r.top+Math.random()*r.height,nx=(tx-r.left)/r.width;
     const p={m:mode,t0:now,s:rnd(1.5,5.5),w:Math.random()<.22,ph:rnd(0,6.28)};
@@ -333,14 +335,14 @@ function mat(el,fromEl,dur=720){
 const bg=$('#bg'),bc=bg.getContext('2d');
 let stars=[],tilt={x:0,y:0};
 function sizeBg(){bg.width=innerWidth*DPR;bg.height=innerHeight*DPR;bc.setTransform(DPR,0,0,DPR,0,0);
-  stars=Array.from({length:Math.min(170,Math.floor(innerWidth*innerHeight/7000))},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,z:rnd(.2,1),tw:rnd(0,6.28)}))}
+  stars=Array.from({length:Math.min(LOW_POWER?42:100,Math.floor(innerWidth*innerHeight/(LOW_POWER?18000:10000)))},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,z:rnd(.2,1),tw:rnd(0,6.28)}))}
 sizeBg();addEventListener('resize',sizeBg);
 
 /* ============ RIG: inclinação 3D ============ */
 const rig=$('#rig');
 let tgt={x:0,y:0},curT={x:0,y:0};
 document.addEventListener('mousemove',e=>{
-  if(innerWidth<=500)return;
+  if(innerWidth<=500||IS_NATIVE)return;
   tgt.y=(innerWidth/2-e.clientX)/-28;tgt.x=(innerHeight/2-e.clientY)/28;
   document.documentElement.style.setProperty('--mx',(e.clientX/innerWidth*100)+'%');
   document.documentElement.style.setProperty('--my',(e.clientY/innerHeight*100)+'%');
@@ -383,9 +385,14 @@ function drawOrb(t){
 }
 
 /* ============ LOOP PRINCIPAL ============ */
+let lastFrame=0;
 function mainLoop(t){
+  requestAnimationFrame(mainLoop);
+  if(document.hidden)return;
+  if(t-lastFrame<(LOW_POWER?33:16))return;
+  lastFrame=t;
   curT.x+=(tgt.x-curT.x)*.08;curT.y+=(tgt.y-curT.y)*.08;
-  if(innerWidth>500||Math.abs(curT.x)+Math.abs(curT.y)>.01)rig.style.transform=`rotateX(${curT.x.toFixed(2)}deg) rotateY(${curT.y.toFixed(2)}deg)`;
+  if(!IS_NATIVE&&innerWidth>700&&Math.abs(curT.x)+Math.abs(curT.y)>.01)rig.style.transform=`rotateX(${curT.x.toFixed(2)}deg) rotateY(${curT.y.toFixed(2)}deg)`;
   tilt.x=curT.y;tilt.y=curT.x;
   bc.clearRect(0,0,innerWidth,innerHeight);
   const [r,g,b]=T.rgb;
@@ -396,8 +403,7 @@ function mainLoop(t){
     bc.fillRect(s.x+tilt.x*s.z*3,s.y+tilt.y*s.z*3,s.z*2,s.z*2);
   }
   drawOrb(t);
-  requestAnimationFrame(mainLoop);
-}
+} 
 requestAnimationFrame(mainLoop);
 
 /* ============ TELEMETRIA ============ */
@@ -484,7 +490,7 @@ const APPS={
       const p=c.querySelector('#wp').value.replace(/\D/g,'');
       if(p.length<10){notify({icon:'⚠️',type:'● ERRO',title:'Número inválido',desc:'Use DDI + DDD + número, ex.: 5511999999999.'});return}
       const t=encodeURIComponent(c.querySelector('#wt').value||'Olá! Enviado pelo meu Stark HoloOS.');
-      window.open(`https://wa.me/${p}?text=${t}`,'_blank','noopener');
+      holoOpen(`https://wa.me/${p}?text=${t}`);
     };
   }},
   web:{title:'Navegador Holo-Web',render(c){
@@ -492,9 +498,9 @@ const APPS={
     <div class="chips">${[['YouTube','https://www.youtube.com'],['Wikipédia','https://pt.wikipedia.org'],['Notícias','https://news.google.com'],['Tradutor','https://translate.google.com'],['Clima','https://www.google.com/search?q=clima']].map(([n,u])=>`<span class="chip" data-u="${u}">${n}</span>`).join('')}</div>`;
     const go=()=>{const q=c.querySelector('#wq').value.trim();if(!q)return;
       const u=/^https?:\/\//i.test(q)?q:(/^[^\s]+\.[a-z]{2,}(\/.*)?$/i.test(q)?'https://'+q:'https://www.google.com/search?q='+encodeURIComponent(q));
-      window.open(u,'_blank','noopener')};
+      holoOpen(u)};
     c.querySelector('#wgo').onclick=go;c.querySelector('#wq').onkeydown=e=>{if(e.key==='Enter')go()};
-    c.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>window.open(ch.dataset.u,'_blank','noopener'));
+    c.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>holoOpen(ch.dataset.u));
   }},
   hardware:{title:'Diagnóstico de hardware',render(c){
     const rows=[['bat','Bateria'],['cpu','Núcleos CPU'],['ram','Memória'],['scr','Tela'],['net','Rede'],['fps','FPS'],['tz','Fuso horário']];
@@ -609,7 +615,7 @@ GRID.forEach(a=>{
   d.onclick=()=>{
     const cube=d.querySelector('.app-cube');
     if(a.app)openApp(a.app,cube);
-    else if(a.url){sfx.dis();burst(cube,'out',null,.8);setTimeout(()=>window.open(a.url,'_blank','noopener'),300)}
+    else if(a.url){sfx.dis();burst(cube,'out',null,.8);setTimeout(()=>holoOpen(a.url),300)}
     else cycleTheme(cube);
   };
   grid.appendChild(d);
