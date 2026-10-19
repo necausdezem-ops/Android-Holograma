@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.provider.ContactsContract
 import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.BatteryManager
@@ -43,6 +44,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var assetLoader: WebViewAssetLoader
     private lateinit var voiceLauncher: ActivityResultLauncher<Intent>
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var contactsPermissionLauncher: ActivityResultLauncher<String>
+    private var pendingContactQuery: String? = null
     private lateinit var homeRoleLauncher: ActivityResultLauncher<Intent>
     private var pendingWebPermission: PermissionRequest? = null
     private var tts: TextToSpeech? = null
@@ -75,6 +78,17 @@ class MainActivity : ComponentActivity() {
 
         homeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             Toast.makeText(this, if (result.resultCode == Activity.RESULT_OK) "Launcher padrão atualizado." else "Seleção de launcher cancelada.", Toast.LENGTH_SHORT).show()
+        }
+
+        contactsPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val query = pendingContactQuery
+            pendingContactQuery = null
+            if (query != null) {
+                if (granted) sendContactResults(query) else {
+                    webView.evaluateJavascript("window.holoContactResults && window.holoContactResults([], 'permission_denied');", null)
+                    Toast.makeText(this, "Permissão de contatos negada.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -274,6 +288,47 @@ class MainActivity : ComponentActivity() {
                 }
                 try { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$digits"))) }
                 catch (_: Exception) { Toast.makeText(this@MainActivity, "Não foi possível abrir o discador.", Toast.LENGTH_SHORT).show() }
+            }
+        }
+
+        @JavascriptInterface
+        fun findContactsByName(query: String) {
+            runOnUiThread {
+                val q = query.trim()
+                if (q.isBlank()) {
+                    webView.evaluateJavascript("window.holoContactResults && window.holoContactResults([], 'empty');", null)
+                    return@runOnUiThread
+                }
+                if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                    pendingContactQuery = q
+                    contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                } else sendContactResults(q)
+            }
+        }
+
+        private fun sendContactResults(query: String) {
+            val results = JSONArray()
+            try {
+                val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER)
+                contentResolver.query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    projection,
+                    "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                    arrayOf("%$query%"),
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE NOCASE ASC"
+                )?.use { cursor ->
+                    val nameCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                    val numberCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    while (cursor.moveToNext() && results.length() < 30) {
+                        val name = cursor.getString(nameCol) ?: continue
+                        val number = cursor.getString(numberCol) ?: continue
+                        if (number.isNotBlank()) results.put(JSONObject().put("name", name).put("number", number))
+                    }
+                }
+                val payload = JSONObject.quote(results.toString())
+                webView.evaluateJavascript("window.holoContactResults && window.holoContactResults(JSON.parse($payload), 'ok');", null)
+            } catch (_: Exception) {
+                webView.evaluateJavascript("window.holoContactResults && window.holoContactResults([], 'error');", null)
             }
         }
 
