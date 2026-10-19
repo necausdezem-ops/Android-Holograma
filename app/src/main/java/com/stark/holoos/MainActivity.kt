@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
             val query = pendingContactQuery
             pendingContactQuery = null
             if (query != null) {
-                if (granted) sendContactResults(query) else {
+                if (granted) HoloBridge().findContactsByName(query) else {
                     webView.evaluateJavascript("window.holoContactResults && window.holoContactResults([], 'permission_denied');", null)
                     Toast.makeText(this, "Permissão de contatos negada.", Toast.LENGTH_SHORT).show()
                 }
