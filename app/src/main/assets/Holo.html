@@ -135,6 +135,7 @@ body.ar .holo-screen{box-shadow:inset 0 0 60px rgba(var(--rgb),.25)}
 @media (max-height:780px){:root{--orb:130px}.clock{font-size:38px}.app-cube{width:46px;height:46px}}
 @media (max-width:500px){.phone-rig{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:none;padding:10px}#notifStage{left:4px;right:4px}}
 @media (prefers-reduced-motion:reduce){.ambient-grid,.laser-scan,.holo-app .app-cube::after{animation:none}}
+@media(max-width:600px){.phone-rig,.holo-screen,.win,.notif{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.ambient-grid{animation:none;opacity:.45}.laser-scan{animation-duration:12s}.app-cube{box-shadow:0 3px 9px rgba(var(--rgb),.15),inset 0 0 7px rgba(var(--rgb),.14)}.holo-app .app-cube::after{animation:none;display:none}.status-bar,.quick,.holo-dock{box-shadow:none}.win{box-shadow:0 0 18px var(--glow),inset 0 0 12px rgba(var(--rgb),.1)}}
 </style>
 </head>
 <body>
@@ -737,8 +738,8 @@ const CMDS=[
  [/ajuste|configura/,()=>openApp('settings')],
  [/c[aâ]mera|transparente|vidro/,toggleAR],
  [/tela cheia/,toggleFS],
- [/youtube/,()=>{say('Abrindo YouTube.');notify({icon:'▶️',title:'YouTube',desc:'Toque para abrir.',action:()=>window.open('https://www.youtube.com','_blank')})}],
- [/mapa|sat[eé]lite/,()=>{say('Acessando satélite.');notify({icon:'🛰️',title:'Satélite',desc:'Toque para abrir o mapa.',action:()=>window.open('https://maps.google.com','_blank')})}],
+ [/youtube/,()=>{say('Abrindo YouTube.');notify({icon:'▶️',title:'YouTube',desc:'Toque para abrir.',action:()=>holoOpen('https://www.youtube.com')})}],
+ [/mapa|sat[eé]lite/,()=>{say('Acessando satélite.');notify({icon:'🛰️',title:'Satélite',desc:'Toque para abrir o mapa.',action:()=>holoOpen('https://maps.google.com')})}],
  [/notifica|alerta/,()=>demoNotify()],
  [/fechar|desintegr|voltar|home|limpar/,()=>homeAll()],
  [/quem (é|e) voc[eê]|seu nome/,()=>say('Sou o J.A.R.V.I.S., seu assistente holográfico da Stark Industries.')],
@@ -748,7 +749,7 @@ function runCmd(t){
   t=t.toLowerCase();
   for(const [re,fn] of CMDS)if(re.test(t)){fn();return}
   say(`Não reconheci "${t}". Posso pesquisar na rede.`);
-  notify({icon:'🔎',type:'● J.A.R.V.I.S.',title:'Pesquisar na rede?',desc:`Toque para buscar "${t}" no Google.`,ttl:8000,action:()=>window.open('https://www.google.com/search?q='+encodeURIComponent(t),'_blank','noopener')});
+  notify({icon:'🔎',type:'● J.A.R.V.I.S.',title:'Pesquisar na rede?',desc:`Toque para buscar "${t}" no Google.`,ttl:8000,action:()=>holoOpen('https://www.google.com/search?q='+encodeURIComponent(t))});
 }
 window.holoNativeVoiceResult=function(t){orbS.listen=false;if(t){stat.textContent='🗣️ "'+t+'"';runCmd(t)}else setStatus(IDLE,0)};
 window.holoNativeSpeechDone=function(){orbS.speak=false;setTimeout(()=>{if(!orbS.listen&&!orbS.speak)setStatus(IDLE,0)},1200)};
