@@ -191,6 +191,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    private inner class HoloBridge {
         @JavascriptInterface
         fun sendHologram(ip: String, pin: String, type: String, title: String, payload: String) {
             val host = ip.trim()
@@ -220,7 +221,7 @@ class MainActivity : ComponentActivity() {
             }.start()
         }
 
-    private inner class HoloBridge {
+
         @JavascriptInterface
         fun startVoice() {
             runOnUiThread {
